@@ -1,0 +1,993 @@
+<!DOCTYPE html>
+<html lang="vi" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BizTask AI - Giải pháp quản lý thông minh</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chart.js for Dashboard -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Markdown Parser for AI Chat -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        brand: {
+                            50: '#eff6ff', 100: '#dbeafe', 500: '#3b82f6', 600: '#2563eb', 700: '#1d4ed8', 800: '#1e40af', 900: '#0f172a',
+                        },
+                        darkbg: '#0f172a',
+                        card: '#1e293b'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom Animations */
+        @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-10px); } 100% { transform: translateY(0px); } }
+        .animate-float { animation: float 3s ease-in-out infinite; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        /* Logo Styling */
+        .logo-box {
+            width: 40px; height: 40px;
+            background: linear-gradient(135deg, #2563eb, #1e40af);
+            display: flex; align-items: center; justify-content: center;
+            border-radius: 8px; color: white; font-weight: 800; font-size: 20px;
+            box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.3);
+        }
+        
+        /* Chatbox Specific */
+        .chat-bubble-user { background-color: #dbeafe; color: #1e3a8a; border-radius: 18px 18px 0 18px; }
+        .chat-bubble-ai { background-color: #f3f4f6; color: #1f2937; border-radius: 18px 18px 18px 0; }
+        .dark .chat-bubble-user { background-color: #1e40af; color: white; }
+        .dark .chat-bubble-ai { background-color: #374151; color: #e5e7eb; }
+        
+        /* Loader */
+        .loader { border: 3px solid #f3f3f3; border-top: 3px solid #3498db; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        /* Modal Transitions */
+        .modal { transition: opacity 0.25s ease; }
+        body.modal-active { overflow-x: hidden; overflow-y: visible !important; }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 dark:bg-darkbg dark:text-gray-100 transition-colors duration-300 h-screen flex flex-col overflow-hidden">
+
+    <!-- GLOBAL STATE & APP CONTAINER -->
+    <div id="app" class="h-full w-full relative">
+        <!-- Views will be injected here -->
+    </div>
+    
+    <!-- MODAL CONTAINER (Dynamic Injection) -->
+    <div id="modal-container"></div>
+
+    <!-- AI CHATBOX OVERLAY (Fixed) -->
+    <div id="ai-chat-widget" class="fixed bottom-6 right-6 z-50 hidden">
+        <!-- Chat Button -->
+        <button onclick="toggleChat()" class="w-14 h-14 bg-brand-600 hover:bg-brand-700 rounded-full shadow-lg flex items-center justify-center text-white transition transform hover:scale-110 relative">
+            <i class="fas fa-robot text-xl"></i>
+            <span class="absolute top-0 right-0 flex h-3 w-3">
+              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+              <span class="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+            </span>
+        </button>
+
+        <!-- Chat Window -->
+        <div id="chat-window" class="hidden absolute bottom-16 right-0 w-80 md:w-96 h-[500px] bg-white dark:bg-card border border-gray-200 dark:border-gray-700 rounded-2xl shadow-2xl flex flex-col overflow-hidden transition-all origin-bottom-right transform scale-95 opacity-0">
+            <!-- Header -->
+            <div class="bg-brand-600 p-4 flex items-center justify-between text-white">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
+                        <i class="fas fa-robot text-sm"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-sm">Trợ lý BizTask</h3>
+                        <p class="text-xs text-brand-100 flex items-center gap-1"><span class="w-2 h-2 bg-green-400 rounded-full block"></span> Sẵn sàng hỗ trợ</p>
+                    </div>
+                </div>
+                <button onclick="toggleChat()" class="text-white/80 hover:text-white"><i class="fas fa-times"></i></button>
+            </div>
+            
+            <!-- Body -->
+            <div id="chat-messages" class="flex-1 p-4 overflow-y-auto space-y-4 bg-gray-50 dark:bg-darkbg/50">
+                <!-- Welcome Message -->
+                <div class="flex items-start gap-2">
+                    <div class="w-8 h-8 rounded-full bg-brand-100 dark:bg-brand-900 flex-shrink-0 flex items-center justify-center text-xs text-brand-600 font-bold">AI</div>
+                    <div class="chat-bubble-ai p-3 text-sm shadow-sm max-w-[85%]">
+                        Chào bạn! Tôi có thể giúp bạn tra cứu KPI, hướng dẫn tạo công việc hoặc giải đáp thắc mắc về hệ thống.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Input -->
+            <div class="p-3 bg-white dark:bg-card border-t border-gray-200 dark:border-gray-700 flex items-center gap-2">
+                <button class="text-gray-400 hover:text-brand-500 p-2"><i class="fas fa-paperclip"></i></button>
+                <input id="chat-input" type="text" placeholder="Hỏi AI..." class="flex-1 bg-gray-100 dark:bg-gray-800 border-none rounded-full px-4 py-2 text-sm focus:ring-2 focus:ring-brand-500 outline-none dark:text-white" onkeypress="handleChatKey(event)">
+                <button onclick="sendChatMessage()" class="text-brand-600 hover:text-brand-700 p-2"><i class="fas fa-paper-plane"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        // --- 1. MODELS & STATE MANAGEMENT ---
+        const APP_STATE = {
+            user: null, 
+            view: 'splash',
+            darkMode: false,
+            tasks: [],
+            users: [
+                { id: 1, name: 'Nguyễn Văn A', role: 'admin', email: 'admin@biztask.com', kpi: 95, status: 'online', job: 'CEO' },
+                { id: 2, name: 'Trần Thị B', role: 'manager', email: 'manager@biztask.com', department: 'Marketing', kpi: 88, status: 'away', job: 'Marketing Lead' },
+                { id: 3, name: 'Lê Văn C', role: 'employee', email: 'staff@biztask.com', department: 'Marketing', kpi: 92, status: 'online', job: 'Content Writer' },
+                { id: 4, name: 'Phạm Văn D', role: 'employee', email: 'dev@biztask.com', department: 'IT', kpi: 85, status: 'online', job: 'Frontend Dev' }
+            ],
+            departments: ['Marketing', 'IT', 'Sales', 'HR', 'Board']
+        };
+
+        // Mock Data Initialization
+        const initMockData = () => {
+            APP_STATE.tasks = [
+                { id: 101, title: 'Hoàn thiện báo cáo quý 1', assignee: 3, status: 'doing', priority: 'high', due: '2023-11-20' },
+                { id: 102, title: 'Tuyển dụng Senior Dev', assignee: 1, status: 'todo', priority: 'medium', due: '2023-11-25' },
+                { id: 103, title: 'Chạy chiến dịch Facebook Ads', assignee: 3, status: 'done', priority: 'high', due: '2023-11-10' },
+                { id: 104, title: 'Họp team đầu tuần', assignee: 2, status: 'todo', priority: 'low', due: '2023-11-21' }
+            ];
+        };
+
+        // --- 2. CONTROLLERS & CORE FUNCTIONS ---
+
+        function renderApp() {
+            const app = document.getElementById('app');
+            app.innerHTML = ''; // Clear current view
+            
+            switch(APP_STATE.view) {
+                case 'splash':
+                    app.innerHTML = ViewSplash();
+                    setTimeout(() => navigate('onboarding'), 2500);
+                    break;
+                case 'onboarding':
+                    app.innerHTML = ViewOnboarding();
+                    break;
+                case 'auth':
+                    app.innerHTML = ViewAuth();
+                    break;
+                case 'dashboard':
+                    app.innerHTML = LayoutMain(ViewDashboard());
+                    initCharts();
+                    document.getElementById('ai-chat-widget').classList.remove('hidden');
+                    break;
+                case 'tasks':
+                    app.innerHTML = LayoutMain(ViewTasks());
+                    document.getElementById('ai-chat-widget').classList.remove('hidden');
+                    break;
+                case 'team':
+                    app.innerHTML = LayoutMain(ViewTeam());
+                    document.getElementById('ai-chat-widget').classList.remove('hidden');
+                    break;
+                case 'settings':
+                    app.innerHTML = LayoutMain(ViewSettings());
+                    document.getElementById('ai-chat-widget').classList.remove('hidden');
+                    break;
+            }
+            applyTheme();
+        }
+
+        function navigate(viewName) {
+            APP_STATE.view = viewName;
+            renderApp();
+        }
+
+        function toggleTheme() {
+            APP_STATE.darkMode = !APP_STATE.darkMode;
+            document.documentElement.classList.toggle('dark');
+        }
+        
+        function applyTheme() {
+            if (APP_STATE.darkMode) document.documentElement.classList.add('dark');
+            else document.documentElement.classList.remove('dark');
+        }
+
+        // --- 3. VIEWS (UI COMPONENTS) ---
+
+        const Logo = (size = 'text-2xl') => `
+            <div class="flex items-center gap-2">
+                <div class="logo-box">B</div>
+                <span class="font-bold tracking-tight ${size} text-brand-900 dark:text-white">BizTask<span class="text-brand-500">AI</span></span>
+            </div>
+        `;
+
+        const ViewSplash = () => `
+            <div class="flex flex-col items-center justify-center h-full bg-white dark:bg-darkbg animate-fade-in">
+                <div class="animate-float mb-4 scale-150">
+                    ${Logo('text-4xl')}
+                </div>
+                <p class="text-gray-500 dark:text-gray-400 mt-4 text-sm tracking-widest uppercase">Giải pháp quản trị toàn diện</p>
+                <div class="mt-8 loader"></div>
+            </div>
+        `;
+
+        const ViewOnboarding = () => `
+            <div class="h-full flex flex-col bg-white dark:bg-darkbg relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-64 h-64 bg-brand-200 dark:bg-brand-900/30 rounded-full filter blur-3xl opacity-50 -translate-y-1/2 translate-x-1/2"></div>
+                
+                <div class="flex-1 flex flex-col items-center justify-center p-8 text-center z-10">
+                    <img src="https://img.freepik.com/free-vector/scrum-method-concept-illustration_114360-10145.jpg?w=800" class="w-64 mb-8 drop-shadow-xl rounded-2xl" alt="Task Management">
+                    <h2 class="text-3xl font-bold mb-4 text-gray-900 dark:text-white">Quản lý công việc <br><span class="text-brand-600">Thông Minh & Tự Động</span></h2>
+                    <p class="text-gray-500 dark:text-gray-400 mb-8 max-w-md">Tối ưu hóa quy trình làm việc với sự hỗ trợ của AI. Giao việc, báo cáo và theo dõi KPI chỉ trong vài cú chạm.</p>
+                    
+                    <button onclick="navigate('auth')" class="w-full max-w-xs bg-brand-600 text-white py-4 rounded-xl font-bold shadow-lg hover:bg-brand-700 transition transform hover:-translate-y-1">
+                        Bắt đầu ngay <i class="fas fa-arrow-right ml-2"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+
+        const ViewAuth = () => `
+            <div class="h-full flex items-center justify-center bg-gray-50 dark:bg-darkbg p-4">
+                <div class="bg-white dark:bg-card w-full max-w-md p-8 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700">
+                    <div class="text-center mb-8">
+                        <div class="flex justify-center mb-4">${Logo()}</div>
+                        <h2 class="text-xl font-bold text-gray-800 dark:text-white">Đăng nhập hệ thống</h2>
+                    </div>
+                    
+                    <div class="space-y-4">
+                        <button onclick="login(1)" class="w-full p-4 border border-brand-200 dark:border-gray-600 rounded-xl flex items-center gap-4 hover:bg-brand-50 dark:hover:bg-gray-700 transition group">
+                            <div class="w-10 h-10 bg-blue-100 dark:bg-blue-900/50 rounded-full flex items-center justify-center text-blue-600 dark:text-blue-300">
+                                <i class="fas fa-user-tie"></i>
+                            </div>
+                            <div class="text-left">
+                                <div class="font-bold text-gray-800 dark:text-white group-hover:text-brand-600">Giám đốc (Admin)</div>
+                                <div class="text-xs text-gray-500">Toàn quyền quản trị hệ thống</div>
+                            </div>
+                        </button>
+
+                        <button onclick="login(2)" class="w-full p-4 border border-brand-200 dark:border-gray-600 rounded-xl flex items-center gap-4 hover:bg-brand-50 dark:hover:bg-gray-700 transition group">
+                            <div class="w-10 h-10 bg-purple-100 dark:bg-purple-900/50 rounded-full flex items-center justify-center text-purple-600 dark:text-purple-300">
+                                <i class="fas fa-briefcase"></i>
+                            </div>
+                            <div class="text-left">
+                                <div class="font-bold text-gray-800 dark:text-white group-hover:text-brand-600">Trưởng phòng</div>
+                                <div class="text-xs text-gray-500">Quản lý KPI & Nhân viên phòng</div>
+                            </div>
+                        </button>
+
+                        <button onclick="login(3)" class="w-full p-4 border border-brand-200 dark:border-gray-600 rounded-xl flex items-center gap-4 hover:bg-brand-50 dark:hover:bg-gray-700 transition group">
+                            <div class="w-10 h-10 bg-green-100 dark:bg-green-900/50 rounded-full flex items-center justify-center text-green-600 dark:text-green-300">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <div class="text-left">
+                                <div class="font-bold text-gray-800 dark:text-white group-hover:text-brand-600">Nhân viên</div>
+                                <div class="text-xs text-gray-500">Nhận việc & Báo cáo</div>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        const LayoutMain = (content) => `
+            <div class="flex h-full">
+                <!-- Sidebar (Desktop) -->
+                <aside class="hidden md:flex flex-col w-64 bg-white dark:bg-card border-r border-gray-200 dark:border-gray-700">
+                    <div class="p-6">${Logo()}</div>
+                    <nav class="flex-1 px-4 space-y-2 mt-4">
+                        ${NavItems('desktop')}
+                    </nav>
+                    <div class="p-4 border-t border-gray-200 dark:border-gray-700">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-full bg-brand-500 flex items-center justify-center text-white font-bold">
+                                ${APP_STATE.user.name.charAt(0)}
+                            </div>
+                            <div class="overflow-hidden">
+                                <div class="font-bold text-sm truncate dark:text-white">${APP_STATE.user.name}</div>
+                                <div class="text-xs text-gray-500 truncate capitalize">${APP_STATE.user.role}</div>
+                            </div>
+                        </div>
+                        <button onclick="navigate('auth')" class="mt-4 w-full text-xs text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 py-2 rounded flex items-center justify-center gap-2"><i class="fas fa-sign-out-alt"></i> Đăng xuất</button>
+                    </div>
+                </aside>
+
+                <!-- Mobile Header -->
+                <div class="flex-1 flex flex-col h-full overflow-hidden relative">
+                    <header class="md:hidden h-16 bg-white dark:bg-card border-b border-gray-200 dark:border-gray-700 flex items-center justify-between px-4 z-20">
+                        ${Logo('text-lg')}
+                        <div class="w-8 h-8 rounded-full bg-brand-500 flex items-center justify-center text-white text-xs font-bold">
+                             ${APP_STATE.user.name.charAt(0)}
+                        </div>
+                    </header>
+
+                    <!-- Main Content Scrollable -->
+                    <main class="flex-1 overflow-y-auto bg-gray-50 dark:bg-darkbg p-4 md:p-8 pb-24 md:pb-8">
+                        ${content}
+                    </main>
+
+                    <!-- Mobile Bottom Nav -->
+                    <nav class="md:hidden fixed bottom-0 w-full bg-white dark:bg-card border-t border-gray-200 dark:border-gray-700 flex justify-around py-3 z-30 pb-safe">
+                        ${NavItems('mobile')}
+                    </nav>
+                </div>
+            </div>
+        `;
+
+        const NavItems = (mode) => {
+            const items = [
+                { id: 'dashboard', icon: 'fa-chart-pie', label: 'Tổng quan' },
+                { id: 'tasks', icon: 'fa-tasks', label: 'Công việc' },
+                { id: 'team', icon: 'fa-users', label: 'Nhân sự', role: ['admin', 'manager'] },
+                { id: 'settings', icon: 'fa-cog', label: 'Cài đặt' }
+            ];
+
+            return items.map(item => {
+                if (item.role && !item.role.includes(APP_STATE.user.role)) return '';
+                const active = APP_STATE.view === item.id;
+                const activeClass = active ? 'text-brand-600 bg-brand-50 dark:bg-brand-900/20 dark:text-brand-400' : 'text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800';
+                
+                if (mode === 'desktop') {
+                    return `<button onclick="navigate('${item.id}')" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition ${activeClass}">
+                        <i class="fas ${item.icon} w-5"></i> ${item.label}
+                    </button>`;
+                } else {
+                    return `<button onclick="navigate('${item.id}')" class="flex flex-col items-center gap-1 text-xs ${active ? 'text-brand-600 dark:text-brand-400' : 'text-gray-400'}">
+                        <i class="fas ${item.icon} text-lg"></i>
+                        <span>${item.label}</span>
+                    </button>`;
+                }
+            }).join('');
+        };
+
+        const ViewDashboard = () => `
+            <div class="space-y-6">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Tổng quan</h1>
+                        <p class="text-sm text-gray-500">Số liệu cập nhật thời gian thực hôm nay</p>
+                    </div>
+                    <button onclick="toggleTheme()" class="p-2 rounded-full bg-white dark:bg-card shadow text-gray-600 dark:text-yellow-400">
+                        <i class="fas ${APP_STATE.darkMode ? 'fa-sun' : 'fa-moon'}"></i>
+                    </button>
+                </div>
+
+                <!-- Expanded Stats Grid -->
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                    <!-- Thời gian làm -->
+                    <div class="bg-white dark:bg-card p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col justify-between h-32">
+                        <div class="flex justify-between items-start">
+                             <div class="text-gray-500 text-xs uppercase tracking-wide">Thời gian làm</div>
+                             <i class="fas fa-clock text-blue-500 bg-blue-100 dark:bg-blue-900/30 p-2 rounded-lg"></i>
+                        </div>
+                        <div>
+                            <div class="text-2xl font-bold text-gray-900 dark:text-white">164h</div>
+                            <div class="text-xs text-green-500 mt-1"><i class="fas fa-arrow-up"></i> +12h so với tháng trước</div>
+                        </div>
+                    </div>
+
+                    <!-- Công việc được giao -->
+                    <div class="bg-white dark:bg-card p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col justify-between h-32">
+                         <div class="flex justify-between items-start">
+                             <div class="text-gray-500 text-xs uppercase tracking-wide">Việc được giao</div>
+                             <i class="fas fa-file-alt text-purple-500 bg-purple-100 dark:bg-purple-900/30 p-2 rounded-lg"></i>
+                        </div>
+                         <div>
+                            <div class="text-2xl font-bold text-gray-900 dark:text-white">28</div>
+                            <div class="text-xs text-gray-400 mt-1">Trong tháng này</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Việc cần làm -->
+                     <div class="bg-white dark:bg-card p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col justify-between h-32">
+                         <div class="flex justify-between items-start">
+                             <div class="text-gray-500 text-xs uppercase tracking-wide">Cần xử lý</div>
+                             <i class="fas fa-exclamation-circle text-red-500 bg-red-100 dark:bg-red-900/30 p-2 rounded-lg"></i>
+                        </div>
+                         <div>
+                            <div class="text-2xl font-bold text-gray-900 dark:text-white">5</div>
+                            <div class="text-xs text-red-500 mt-1">2 việc hết hạn hôm nay</div>
+                        </div>
+                    </div>
+
+                     <!-- KPI -->
+                     <div class="bg-white dark:bg-card p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col justify-between h-32">
+                         <div class="flex justify-between items-start">
+                             <div class="text-gray-500 text-xs uppercase tracking-wide">KPI Tháng</div>
+                             <i class="fas fa-chart-line text-green-500 bg-green-100 dark:bg-green-900/30 p-2 rounded-lg"></i>
+                        </div>
+                         <div>
+                            <div class="text-2xl font-bold text-gray-900 dark:text-white">92%</div>
+                            <div class="text-xs text-green-500 mt-1">Đạt chỉ tiêu</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Tiến độ -->
+                    <div class="bg-white dark:bg-card p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col justify-between h-32">
+                        <div class="flex justify-between items-start">
+                             <div class="text-gray-500 text-xs uppercase tracking-wide">Tiến độ hoàn thành</div>
+                             <i class="fas fa-check-double text-teal-500 bg-teal-100 dark:bg-teal-900/30 p-2 rounded-lg"></i>
+                        </div>
+                        <div>
+                             <div class="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700 mt-2">
+                                <div class="bg-teal-500 h-2.5 rounded-full" style="width: 75%"></div>
+                             </div>
+                             <div class="text-xs text-gray-500 mt-2 text-right">75% tổng dự án</div>
+                        </div>
+                    </div>
+
+                     <!-- Active Users -->
+                     <div class="bg-white dark:bg-card p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col justify-between h-32 col-span-1 md:col-span-2 lg:col-span-3">
+                         <div class="flex justify-between items-start mb-2">
+                             <div class="text-gray-500 text-xs uppercase tracking-wide">Thành viên trực tuyến</div>
+                             <span class="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded dark:bg-green-900 dark:text-green-300">3 Online</span>
+                        </div>
+                        <div class="flex -space-x-3 overflow-hidden p-1">
+                             ${APP_STATE.users.filter(u => u.status === 'online').map(u => `
+                                <div class="relative group cursor-pointer" title="${u.name}">
+                                    <div class="w-10 h-10 rounded-full bg-brand-500 border-2 border-white dark:border-card flex items-center justify-center text-white font-bold text-sm">${u.name.charAt(0)}</div>
+                                    <span class="bottom-0 right-0 absolute w-3 h-3 bg-green-400 border-2 border-white dark:border-gray-800 rounded-full"></span>
+                                </div>
+                             `).join('')}
+                             <div class="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700 border-2 border-white dark:border-card flex items-center justify-center text-gray-500 text-xs font-medium hover:bg-gray-300 cursor-pointer">+2</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charts Area -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-white dark:bg-card p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+                        <h3 class="font-bold mb-4 dark:text-white">Biểu đồ năng suất (Tuần)</h3>
+                        <canvas id="chartProductivity" height="200"></canvas>
+                    </div>
+                    <div class="bg-white dark:bg-card p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+                        <h3 class="font-bold mb-4 dark:text-white">Phân bổ dự án</h3>
+                        <canvas id="chartProjects" height="200"></canvas>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        const ViewTasks = () => `
+            <div class="h-full flex flex-col">
+                <div class="flex justify-between items-center mb-6">
+                    <h1 class="text-2xl font-bold dark:text-white">Quản lý công việc</h1>
+                    ${APP_STATE.user.role !== 'employee' ? `
+                    <button onclick="openModal('modal-add-task')" class="bg-brand-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-brand-700 shadow-lg shadow-brand-500/30 flex items-center gap-2">
+                        <i class="fas fa-plus"></i> Giao việc mới
+                    </button>` : ''}
+                </div>
+                
+                <!-- Kanban/List Mock -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 overflow-x-auto pb-4">
+                    <!-- Column Todo -->
+                    <div class="bg-gray-100 dark:bg-gray-800/50 p-4 rounded-xl min-w-[280px]">
+                        <div class="flex justify-between items-center mb-4">
+                            <span class="font-bold text-gray-700 dark:text-gray-300">Cần làm</span>
+                            <span class="bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-xs px-2 py-1 rounded-full">3</span>
+                        </div>
+                        <div class="space-y-3">
+                            ${TaskCard({ title: 'Thiết kế Logo mới', assignee: 'Văn A', prio: 'high', tag: 'Design', id: 101 })}
+                            ${TaskCard({ title: 'Viết nội dung Landing Page', assignee: 'Thị B', prio: 'medium', tag: 'Marketing', id: 102 })}
+                        </div>
+                    </div>
+                    
+                    <!-- Column Doing -->
+                    <div class="bg-gray-100 dark:bg-gray-800/50 p-4 rounded-xl min-w-[280px]">
+                        <div class="flex justify-between items-center mb-4">
+                            <span class="font-bold text-blue-600 dark:text-blue-400">Đang làm</span>
+                            <span class="bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300 text-xs px-2 py-1 rounded-full">2</span>
+                        </div>
+                        <div class="space-y-3">
+                            ${TaskCard({ title: 'Tích hợp Firebase Chat', assignee: 'Văn C', prio: 'high', tag: 'Dev', id: 103 })}
+                        </div>
+                    </div>
+
+                    <!-- Column Done -->
+                    <div class="bg-gray-100 dark:bg-gray-800/50 p-4 rounded-xl min-w-[280px]">
+                        <div class="flex justify-between items-center mb-4">
+                            <span class="font-bold text-green-600 dark:text-green-400">Hoàn thành</span>
+                            <span class="bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-300 text-xs px-2 py-1 rounded-full">5</span>
+                        </div>
+                        <div class="space-y-3 opacity-70">
+                            ${TaskCard({ title: 'Họp Kickoff dự án', assignee: 'All', prio: 'low', tag: 'Meeting', id: 104 })}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        const TaskCard = ({ title, assignee, prio, tag, id }) => {
+            const colors = { high: 'red', medium: 'yellow', low: 'gray' };
+            const c = colors[prio];
+            return `
+            <div onclick="alert('Xem chi tiết công việc #${id}')" class="bg-white dark:bg-card p-4 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-md transition cursor-pointer transform hover:-translate-y-1">
+                <div class="flex justify-between items-start mb-2">
+                    <span class="bg-${c}-100 text-${c}-700 text-[10px] px-2 py-0.5 rounded uppercase font-bold tracking-wider">${prio}</span>
+                    <button class="text-gray-400 hover:text-brand-500"><i class="fas fa-ellipsis-h"></i></button>
+                </div>
+                <h4 class="font-semibold text-sm mb-2 dark:text-gray-200">${title}</h4>
+                <div class="flex justify-between items-center mt-3">
+                    <div class="flex -space-x-2">
+                         <div class="w-6 h-6 rounded-full bg-gray-300 border-2 border-white dark:border-card text-[10px] flex items-center justify-center">${assignee.charAt(0)}</div>
+                    </div>
+                    <span class="text-xs text-gray-500"><i class="far fa-clock"></i> 2 ngày</span>
+                </div>
+            </div>`;
+        };
+        
+        const ViewTeam = () => `
+             <div class="space-y-6">
+                 <div class="flex justify-between items-center">
+                    <h1 class="text-2xl font-bold dark:text-white">Nhân sự & Phòng ban</h1>
+                    <button onclick="openModal('modal-add-employee')" class="bg-brand-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-brand-700 shadow-lg shadow-brand-500/30 flex items-center gap-2">
+                        <i class="fas fa-user-plus"></i> Thêm nhân viên
+                    </button>
+                </div>
+                
+                <div class="bg-white dark:bg-card rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+                    <table class="w-full text-left text-sm">
+                        <thead class="bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400">
+                            <tr>
+                                <th class="p-4">Nhân viên</th>
+                                <th class="p-4">Vai trò</th>
+                                <th class="p-4">Phòng ban</th>
+                                <th class="p-4">Trạng thái</th>
+                                <th class="p-4 text-right">Hành động</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100 dark:divide-gray-700 dark:text-gray-300">
+                            ${APP_STATE.users.map(u => `
+                            <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition cursor-pointer" onclick="viewEmployeeDetail(${u.id})">
+                                <td class="p-4 flex items-center gap-3">
+                                    <div class="w-8 h-8 rounded-full bg-brand-100 flex items-center justify-center text-brand-600 font-bold">${u.name.charAt(0)}</div>
+                                    <div>
+                                        <div class="font-bold">${u.name}</div>
+                                        <div class="text-xs text-gray-500">${u.email}</div>
+                                    </div>
+                                </td>
+                                <td class="p-4"><span class="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded text-xs font-bold uppercase">${u.role}</span></td>
+                                <td class="p-4">${u.department || 'N/A'}</td>
+                                <td class="p-4">
+                                    <span class="flex items-center gap-1 text-xs">
+                                        <span class="w-2 h-2 rounded-full ${u.status === 'online' ? 'bg-green-500' : 'bg-yellow-500'}"></span> 
+                                        ${u.status === 'online' ? 'Online' : 'Vắng mặt'}
+                                    </span>
+                                </td>
+                                <td class="p-4 text-right text-gray-400">
+                                    <button class="hover:text-brand-500 p-2"><i class="fas fa-edit"></i></button>
+                                </td>
+                            </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+             </div>
+        `;
+        
+        const ViewSettings = () => `
+            <div class="max-w-4xl mx-auto space-y-6">
+                <h1 class="text-2xl font-bold dark:text-white mb-6">Cài đặt hệ thống</h1>
+                
+                <!-- Account -->
+                <div class="bg-white dark:bg-card p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+                    <h3 class="text-lg font-bold mb-4 flex items-center gap-2 dark:text-white"><i class="fas fa-user-circle text-brand-500"></i> Tài khoản của bạn</h3>
+                    <div class="flex items-center gap-4 mb-6">
+                         <div class="w-16 h-16 rounded-full bg-brand-600 flex items-center justify-center text-white text-2xl font-bold">
+                             ${APP_STATE.user.name.charAt(0)}
+                        </div>
+                        <div>
+                            <div class="font-bold text-lg dark:text-white">${APP_STATE.user.name}</div>
+                            <div class="text-gray-500">${APP_STATE.user.email}</div>
+                            <button class="text-brand-600 text-sm mt-1 hover:underline">Thay đổi ảnh đại diện</button>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <input type="text" value="${APP_STATE.user.name}" class="p-3 bg-gray-50 dark:bg-gray-800 border dark:border-gray-600 rounded-lg w-full dark:text-white">
+                        <input type="text" value="CEO" class="p-3 bg-gray-50 dark:bg-gray-800 border dark:border-gray-600 rounded-lg w-full dark:text-white">
+                    </div>
+                </div>
+
+                <!-- App Settings -->
+                <div class="bg-white dark:bg-card p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+                    <h3 class="text-lg font-bold mb-4 flex items-center gap-2 dark:text-white"><i class="fas fa-sliders-h text-brand-500"></i> Tùy chỉnh ứng dụng</h3>
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center p-3 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition">
+                            <div>
+                                <div class="font-medium dark:text-white">Giao diện tối (Dark Mode)</div>
+                                <div class="text-xs text-gray-500">Giảm mỏi mắt khi làm việc đêm</div>
+                            </div>
+                            <button onclick="toggleTheme()" class="w-12 h-6 rounded-full ${APP_STATE.darkMode ? 'bg-brand-600' : 'bg-gray-300'} relative transition">
+                                <span class="w-4 h-4 bg-white rounded-full absolute top-1 transition-all ${APP_STATE.darkMode ? 'right-1' : 'left-1'}"></span>
+                            </button>
+                        </div>
+                        
+                        <div class="flex justify-between items-center p-3 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition">
+                            <div>
+                                <div class="font-medium dark:text-white">Thông báo đẩy</div>
+                                <div class="text-xs text-gray-500">Nhận thông báo khi có việc mới</div>
+                            </div>
+                            <button class="w-12 h-6 rounded-full bg-brand-600 relative transition">
+                                <span class="w-4 h-4 bg-white rounded-full absolute top-1 right-1 transition-all"></span>
+                            </button>
+                        </div>
+
+                         <div class="flex justify-between items-center p-3 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition">
+                            <div>
+                                <div class="font-medium dark:text-white">Ngôn ngữ</div>
+                                <div class="text-xs text-gray-500">Tiếng Việt (Mặc định)</div>
+                            </div>
+                             <select class="bg-transparent border dark:border-gray-600 rounded p-1 text-sm dark:text-white">
+                                <option>Tiếng Việt</option>
+                                <option>English</option>
+                             </select>
+                        </div>
+                    </div>
+                </div>
+
+                 <!-- Security -->
+                <div class="bg-white dark:bg-card p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+                    <h3 class="text-lg font-bold mb-4 flex items-center gap-2 text-red-500"><i class="fas fa-shield-alt"></i> Bảo mật</h3>
+                    <button class="w-full text-left p-3 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg text-red-600 transition flex justify-between">
+                        <span>Đổi mật khẩu</span>
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                     <button class="w-full text-left p-3 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg text-red-600 transition flex justify-between">
+                        <span>Xác thực 2 lớp (2FA)</span>
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+
+        // --- 4. MODALS (Dynamic Content) ---
+        
+        const openModal = (modalId) => {
+            const container = document.getElementById('modal-container');
+            let content = '';
+            
+            if (modalId === 'modal-add-task') {
+                content = `
+                <div class="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-fade-in" onclick="if(event.target === this) closeModal()">
+                    <div class="bg-white dark:bg-card w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden animate-float">
+                        <div class="p-6 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
+                            <h3 class="text-xl font-bold dark:text-white">Giao việc mới</h3>
+                            <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600"><i class="fas fa-times"></i></button>
+                        </div>
+                        <div class="p-6 space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tiêu đề công việc</label>
+                                <input type="text" class="w-full p-3 border dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-800 dark:text-white" placeholder="VD: Thiết kế banner...">
+                            </div>
+                             <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Mô tả chi tiết</label>
+                                <textarea rows="3" class="w-full p-3 border dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-800 dark:text-white"></textarea>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Người thực hiện</label>
+                                    <select class="w-full p-3 border dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-800 dark:text-white">
+                                        ${APP_STATE.users.map(u => `<option value="${u.id}">${u.name}</option>`).join('')}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Hạn chót</label>
+                                    <input type="date" class="w-full p-3 border dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-800 dark:text-white">
+                                </div>
+                            </div>
+                             <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Mức độ ưu tiên</label>
+                                <div class="flex gap-4">
+                                    <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="prio" class="text-red-600"> Cao</label>
+                                    <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="prio" class="text-yellow-500" checked> Trung bình</label>
+                                    <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="prio" class="text-green-500"> Thấp</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="p-6 bg-gray-50 dark:bg-gray-800/50 flex justify-end gap-3">
+                            <button onclick="closeModal()" class="px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-lg">Hủy</button>
+                            <button onclick="closeModal(); alert('Đã giao việc thành công!')" class="px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700">Giao việc</button>
+                        </div>
+                    </div>
+                </div>`;
+            } else if (modalId === 'modal-add-employee') {
+                content = `
+                <div class="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-fade-in" onclick="if(event.target === this) closeModal()">
+                    <div class="bg-white dark:bg-card w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden animate-float">
+                         <div class="p-6 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
+                            <h3 class="text-xl font-bold dark:text-white">Thêm nhân viên mới</h3>
+                            <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600"><i class="fas fa-times"></i></button>
+                        </div>
+                        <div class="p-6 space-y-4">
+                            <div class="flex items-center gap-4">
+                                <div class="w-16 h-16 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-400">
+                                    <i class="fas fa-camera"></i>
+                                </div>
+                                <button class="text-sm text-brand-600 font-medium">Tải ảnh lên</button>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <input type="text" placeholder="Họ và tên" class="p-3 border dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-800 dark:text-white w-full">
+                                <input type="email" placeholder="Email công ty" class="p-3 border dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-800 dark:text-white w-full">
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <select class="p-3 border dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-800 dark:text-white w-full">
+                                    <option>Chọn phòng ban...</option>
+                                    <option>Marketing</option>
+                                    <option>IT</option>
+                                    <option>Sales</option>
+                                </select>
+                                <select class="p-3 border dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-800 dark:text-white w-full">
+                                    <option>Chọn vai trò...</option>
+                                    <option>Nhân viên</option>
+                                    <option>Trưởng phòng</option>
+                                </select>
+                            </div>
+                             <input type="text" placeholder="Chức danh (VD: Designer)" class="p-3 border dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-800 dark:text-white w-full">
+                        </div>
+                        <div class="p-6 bg-gray-50 dark:bg-gray-800/50 flex justify-end gap-3">
+                            <button onclick="closeModal()" class="px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-lg">Hủy</button>
+                            <button onclick="closeModal(); alert('Đã gửi thư mời nhận việc!')" class="px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700">Gửi lời mời</button>
+                        </div>
+                    </div>
+                </div>`;
+            }
+
+            container.innerHTML = content;
+            document.body.classList.add('modal-active');
+        };
+
+        const closeModal = () => {
+            const container = document.getElementById('modal-container');
+            container.innerHTML = '';
+            document.body.classList.remove('modal-active');
+        };
+
+        const viewEmployeeDetail = (id) => {
+            const u = APP_STATE.users.find(u => u.id === id);
+            if(!u) return;
+
+            const content = `
+                <div class="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-fade-in" onclick="if(event.target === this) closeModal()">
+                    <div class="bg-white dark:bg-card w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden animate-float flex flex-col md:flex-row">
+                        <!-- Left Panel -->
+                        <div class="bg-brand-600 text-white p-8 flex flex-col items-center justify-center md:w-1/3 text-center">
+                            <div class="w-24 h-24 rounded-full bg-white/20 flex items-center justify-center text-4xl font-bold mb-4">${u.name.charAt(0)}</div>
+                            <h2 class="text-xl font-bold">${u.name}</h2>
+                            <p class="text-brand-100 text-sm">${u.job || 'Nhan vien'}</p>
+                            <div class="mt-6 flex gap-3">
+                                <button class="p-2 bg-white/20 rounded hover:bg-white/30"><i class="fas fa-envelope"></i></button>
+                                <button class="p-2 bg-white/20 rounded hover:bg-white/30"><i class="fas fa-phone"></i></button>
+                            </div>
+                        </div>
+                        <!-- Right Panel -->
+                        <div class="p-8 md:w-2/3 dark:text-white">
+                             <h3 class="text-lg font-bold mb-4 border-b pb-2 dark:border-gray-700">Thông tin hồ sơ</h3>
+                             <div class="space-y-4">
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <p class="text-xs text-gray-500 uppercase">Phòng ban</p>
+                                        <p class="font-medium">${u.department}</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-xs text-gray-500 uppercase">Trạng thái</p>
+                                        <p class="font-medium text-green-500">Đang làm việc</p>
+                                    </div>
+                                </div>
+                                <div>
+                                    <p class="text-xs text-gray-500 uppercase">Hiệu suất (KPI)</p>
+                                    <div class="flex items-center gap-2 mt-1">
+                                        <div class="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
+                                            <div class="h-full bg-blue-500" style="width: ${u.kpi || 70}%"></div>
+                                        </div>
+                                        <span class="text-sm font-bold">${u.kpi || 70}%</span>
+                                    </div>
+                                </div>
+                                <div class="bg-gray-50 dark:bg-gray-800 p-3 rounded-lg">
+                                    <p class="text-xs text-gray-500 mb-2">Hồ sơ ứng tuyển</p>
+                                    <div class="flex items-center gap-2 text-sm">
+                                        <i class="fas fa-file-pdf text-red-500"></i>
+                                        <span class="flex-1 truncate">CV_${u.name.replace(/\s/g, '_')}_2024.pdf</span>
+                                        <button class="text-brand-600 text-xs font-bold">Tải xuống</button>
+                                    </div>
+                                </div>
+                             </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            const container = document.getElementById('modal-container');
+            container.innerHTML = content;
+            document.body.classList.add('modal-active');
+        }
+
+        // --- 5. SERVICES & CONTROLLER LOGIC ---
+
+        function login(userId) {
+            const user = APP_STATE.users.find(u => u.id === userId);
+            if (user) {
+                APP_STATE.user = user;
+                navigate('dashboard');
+            }
+        }
+
+        function initCharts() {
+             setTimeout(() => {
+                const ctx1 = document.getElementById('chartProductivity');
+                if(ctx1) {
+                    new Chart(ctx1, {
+                        type: 'line',
+                        data: {
+                            labels: ['T2', 'T3', 'T4', 'T5', 'T6', 'T7'],
+                            datasets: [{
+                                label: 'Năng suất',
+                                data: [85, 92, 78, 95, 88, 90],
+                                borderColor: '#10b981',
+                                tension: 0.4,
+                                fill: true,
+                                backgroundColor: 'rgba(16, 185, 129, 0.1)'
+                            }]
+                        },
+                        options: { responsive: true, plugins: { legend: { display: false } } }
+                    });
+                }
+                
+                const ctx2 = document.getElementById('chartProjects');
+                if(ctx2) {
+                     new Chart(ctx2, {
+                        type: 'doughnut',
+                        data: {
+                            labels: ['Marketing', 'IT', 'Sales'],
+                            datasets: [{
+                                data: [30, 50, 20],
+                                backgroundColor: ['#ec4899', '#3b82f6', '#10b981']
+                            }]
+                        },
+                        options: { responsive: true }
+                    });
+                }
+             }, 100);
+        }
+
+        // --- 6. CHATBOX LOGIC ---
+        
+        let isChatOpen = false;
+        
+        function toggleChat() {
+            const widget = document.getElementById('chat-window');
+            const chatBtn = document.querySelector('#ai-chat-widget > button');
+            
+            isChatOpen = !isChatOpen;
+            
+            if (isChatOpen) {
+                widget.classList.remove('hidden');
+                setTimeout(() => {
+                    widget.classList.remove('scale-95', 'opacity-0');
+                    widget.classList.add('scale-100', 'opacity-100');
+                }, 10);
+                document.getElementById('chat-input').focus();
+            } else {
+                widget.classList.remove('scale-100', 'opacity-100');
+                widget.classList.add('scale-95', 'opacity-0');
+                setTimeout(() => widget.classList.add('hidden'), 300);
+            }
+        }
+
+        function handleChatKey(e) {
+            if (e.key === 'Enter') sendChatMessage();
+        }
+
+        async function sendChatMessage() {
+            const input = document.getElementById('chat-input');
+            const msg = input.value.trim();
+            if (!msg) return;
+
+            addMessageToUI('user', msg);
+            input.value = '';
+            const loadingId = addLoadingToUI();
+
+            try {
+                const aiResponse = await callGeminiAI(msg);
+                removeLoadingUI(loadingId);
+                addMessageToUI('ai', aiResponse);
+            } catch (error) {
+                removeLoadingUI(loadingId);
+                addMessageToUI('ai', 'Xin lỗi, tôi đang gặp sự cố kết nối.');
+            }
+        }
+
+        function addMessageToUI(role, text) {
+            const container = document.getElementById('chat-messages');
+            const div = document.createElement('div');
+            
+            if (role === 'user') {
+                div.className = 'flex items-end justify-end gap-2 animate-fade-in-up';
+                div.innerHTML = `
+                    <div class="chat-bubble-user p-3 text-sm shadow-sm max-w-[85%]">${text}</div>
+                    <div class="w-6 h-6 rounded-full bg-gray-300 dark:bg-gray-600 flex-shrink-0"></div>
+                `;
+            } else {
+                div.className = 'flex items-start gap-2 animate-fade-in-up';
+                const parsedText = marked.parse(text);
+                div.innerHTML = `
+                    <div class="w-8 h-8 rounded-full bg-brand-100 dark:bg-brand-900 flex-shrink-0 flex items-center justify-center text-xs text-brand-600 font-bold">AI</div>
+                    <div class="chat-bubble-ai p-3 text-sm shadow-sm max-w-[85%] prose prose-sm dark:prose-invert">${parsedText}</div>
+                `;
+            }
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function addLoadingToUI() {
+            const container = document.getElementById('chat-messages');
+            const id = 'loading-' + Date.now();
+            const div = document.createElement('div');
+            div.id = id;
+            div.className = 'flex items-start gap-2';
+            div.innerHTML = `
+                <div class="w-8 h-8 rounded-full bg-brand-100 dark:bg-brand-900 flex-shrink-0 flex items-center justify-center text-xs text-brand-600 font-bold">AI</div>
+                <div class="chat-bubble-ai p-3 text-sm shadow-sm">
+                    <div class="flex space-x-1">
+                        <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                        <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 0.2s"></div>
+                        <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 0.4s"></div>
+                    </div>
+                </div>
+            `;
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+            return id;
+        }
+
+        async function callGeminiAI(userText) {
+            const apiKey = ""; 
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+            
+            const systemPrompt = `Bạn là Trợ lý Ảo của BizTask AI. 
+            Nhiệm vụ: Hỗ trợ người dùng quản lý công việc và giải thích tính năng app.
+            
+            Thông tin hệ thống hiện tại để bạn trả lời:
+            - Có 4 thành viên trong team: Nguyễn Văn A (CEO), Trần Thị B (Manager), Lê Văn C (Writer), Phạm Văn D (Dev).
+            - Các tính năng mới: Giao việc qua Modal, Thêm nhân viên, Xem KPI, Chat Realtime.
+            - Năng suất team đang tăng trưởng tốt (Biểu đồ màu xanh).
+            
+            Phong cách: Chuyên nghiệp, ngắn gọn, lịch sự, dùng tiếng Việt.
+            Trả lời định dạng Markdown.`;
+
+            const payload = {
+                contents: [{ parts: [{ text: userText }] }],
+                systemInstruction: { parts: [{ text: systemPrompt }] }
+            };
+
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) throw new Error('API Error');
+                
+                const data = await response.json();
+                return data.candidates[0].content.parts[0].text;
+            } catch (e) {
+                console.warn("AI API failed, using mock fallback.");
+                await new Promise(r => setTimeout(r, 1000));
+                return "Hệ thống AI đang bận. Bạn có thể thử tính năng **Giao việc mới** ở góc phải màn hình Quản lý công việc.";
+            }
+        }
+
+        // Initialize
+        initMockData();
+        renderApp();
+
+    </script>
+</body>
+</html>
