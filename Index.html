@@ -33,6 +33,34 @@
         }
     </script>
     <style>
+        /* Animated Background */
+        body {
+            background: linear-gradient(-45deg, #e0e7ff, #dbeafe, #f3e8ff, #e0f2fe);
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
+        }
+        .dark body {
+            background: linear-gradient(-45deg, #0f172a, #1e1b4b, #172554, #1e293b);
+        }
+        
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* Glassmorphism for containers */
+        .glass {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+        }
+        .dark .glass {
+            background: rgba(30, 41, 59, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
         /* Custom Animations */
         @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-10px); } 100% { transform: translateY(0px); } }
         .animate-float { animation: float 3s ease-in-out infinite; }
@@ -63,7 +91,7 @@
         body.modal-active { overflow-x: hidden; overflow-y: visible !important; }
     </style>
 </head>
-<body class="bg-gray-50 text-gray-800 dark:bg-darkbg dark:text-gray-100 transition-colors duration-300 h-screen flex flex-col overflow-hidden">
+<body class="text-gray-800 dark:text-gray-100 transition-colors duration-300 h-screen flex flex-col overflow-hidden">
 
     <!-- GLOBAL STATE & APP CONTAINER -->
     <div id="app" class="h-full w-full relative">
@@ -85,7 +113,7 @@
         </button>
 
         <!-- Chat Window -->
-        <div id="chat-window" class="hidden absolute bottom-16 right-0 w-80 md:w-96 h-[500px] bg-white dark:bg-card border border-gray-200 dark:border-gray-700 rounded-2xl shadow-2xl flex flex-col overflow-hidden transition-all origin-bottom-right transform scale-95 opacity-0">
+        <div id="chat-window" class="hidden absolute bottom-16 right-0 w-80 md:w-96 h-[500px] bg-white dark:bg-card border border-gray-200 dark:border-gray-700 rounded-2xl shadow-2xl flex flex-col overflow-hidden transition-all origin-bottom-right transform scale-95 opacity-0 glass">
             <!-- Header -->
             <div class="bg-brand-600 p-4 flex items-center justify-between text-white">
                 <div class="flex items-center gap-3">
@@ -101,7 +129,7 @@
             </div>
             
             <!-- Body -->
-            <div id="chat-messages" class="flex-1 p-4 overflow-y-auto space-y-4 bg-gray-50 dark:bg-darkbg/50">
+            <div id="chat-messages" class="flex-1 p-4 overflow-y-auto space-y-4 bg-gray-50/50 dark:bg-darkbg/50">
                 <!-- Welcome Message -->
                 <div class="flex items-start gap-2">
                     <div class="w-8 h-8 rounded-full bg-brand-100 dark:bg-brand-900 flex-shrink-0 flex items-center justify-center text-xs text-brand-600 font-bold">AI</div>
@@ -112,7 +140,7 @@
             </div>
 
             <!-- Input -->
-            <div class="p-3 bg-white dark:bg-card border-t border-gray-200 dark:border-gray-700 flex items-center gap-2">
+            <div class="p-3 bg-white/80 dark:bg-card/80 border-t border-gray-200 dark:border-gray-700 flex items-center gap-2">
                 <button class="text-gray-400 hover:text-brand-500 p-2"><i class="fas fa-paperclip"></i></button>
                 <input id="chat-input" type="text" placeholder="Hỏi AI..." class="flex-1 bg-gray-100 dark:bg-gray-800 border-none rounded-full px-4 py-2 text-sm focus:ring-2 focus:ring-brand-500 outline-none dark:text-white" onkeypress="handleChatKey(event)">
                 <button onclick="sendChatMessage()" class="text-brand-600 hover:text-brand-700 p-2"><i class="fas fa-paper-plane"></i></button>
@@ -134,7 +162,11 @@
                 { id: 3, name: 'Lê Văn C', role: 'employee', email: 'staff@biztask.com', department: 'Marketing', kpi: 92, status: 'online', job: 'Content Writer' },
                 { id: 4, name: 'Phạm Văn D', role: 'employee', email: 'dev@biztask.com', department: 'IT', kpi: 85, status: 'online', job: 'Frontend Dev' }
             ],
-            departments: ['Marketing', 'IT', 'Sales', 'HR', 'Board']
+            departments: ['Marketing', 'IT', 'Sales', 'HR', 'Board'],
+            projects: [],
+            partners: [],
+            notifications: [],
+            schedule: []
         };
 
         // Mock Data Initialization
@@ -144,6 +176,37 @@
                 { id: 102, title: 'Tuyển dụng Senior Dev', assignee: 1, status: 'todo', priority: 'medium', due: '2023-11-25' },
                 { id: 103, title: 'Chạy chiến dịch Facebook Ads', assignee: 3, status: 'done', priority: 'high', due: '2023-11-10' },
                 { id: 104, title: 'Họp team đầu tuần', assignee: 2, status: 'todo', priority: 'low', due: '2023-11-21' }
+            ];
+
+            // Dự án
+            APP_STATE.projects = [
+                { id: 1, name: 'BizTask Mobile App', progress: 75, status: 'Đang chạy', members: [1, 4], desc: 'Phát triển ứng dụng mobile đa nền tảng.' },
+                { id: 2, name: 'Website Revamp 2025', progress: 30, status: 'Mới khởi động', members: [2, 3], desc: 'Làm mới giao diện website công ty.' },
+                { id: 3, name: 'AI Integration Module', progress: 90, status: 'Sắp hoàn thành', members: [1, 4], desc: 'Tích hợp Gemini AI vào hệ thống CSKH.' },
+                { id: 4, name: 'Chiến dịch Marketing Mùa Hè', progress: 50, status: 'Đang chạy', members: [2, 3], desc: 'Chạy ads và PR báo chí.' }
+            ];
+
+            // Đối tác Doanh nghiệp
+            APP_STATE.partners = [
+                { name: 'OpenAI (ChatGPT)', logo: 'fa-robot', type: 'Đối tác AI Chiến lược', color: 'text-green-600 bg-green-100' },
+                { name: 'Suno AI', logo: 'fa-music', type: 'Đối tác Âm thanh số', color: 'text-purple-600 bg-purple-100' },
+                { name: 'Google DeepMind (Veo3)', logo: 'fa-brain', type: 'Nghiên cứu & Phát triển', color: 'text-blue-600 bg-blue-100' },
+                { name: 'FPT Corporation', logo: 'fa-building', type: 'Cổ đông lớn', color: 'text-orange-600 bg-orange-100' }
+            ];
+
+            // Thông báo
+            APP_STATE.notifications = [
+                { id: 1, title: 'Họp giao ban đầu tuần', time: 'Thứ 2 - 08:30', sender: 'Giám đốc', urgent: true, content: 'Đề nghị tất cả trưởng phòng tham gia đầy đủ tại phòng họp A1.' },
+                { id: 2, title: 'Review tiến độ dự án AI', time: 'Thứ 4 - 14:00', sender: 'Giám đốc', urgent: false, content: 'Team IT chuẩn bị demo tính năng mới.' },
+                { id: 3, title: 'Tổng kết tháng 11', time: 'Thứ 6 - 16:00', sender: 'HR Dept', urgent: false, content: 'Toàn thể nhân viên tham gia tiệc trà nhẹ.' }
+            ];
+
+            // Lịch trình thư viện
+            APP_STATE.schedule = [
+                { day: '04/12', event: 'Làm việc tại văn phòng', status: 'check-in' },
+                { day: '05/12', event: 'Công tác Hà Nội (Gặp đối tác)', status: 'away' },
+                { day: '06/12', event: 'Làm việc tại văn phòng', status: 'check-in' },
+                { day: '07/12', event: 'Nghỉ cuối tuần', status: 'off' },
             ];
         };
 
@@ -181,6 +244,25 @@
                     app.innerHTML = LayoutMain(ViewSettings());
                     document.getElementById('ai-chat-widget').classList.remove('hidden');
                     break;
+                case 'projects':
+                    app.innerHTML = LayoutMain(ViewProjects());
+                    document.getElementById('ai-chat-widget').classList.remove('hidden');
+                    break;
+                case 'notifications':
+                    app.innerHTML = LayoutMain(ViewNotifications());
+                    document.getElementById('ai-chat-widget').classList.remove('hidden');
+                    break;
+                case 'business':
+                    app.innerHTML = LayoutMain(ViewBusiness());
+                    document.getElementById('ai-chat-widget').classList.remove('hidden');
+                    break;
+                case 'library':
+                    app.innerHTML = LayoutMain(ViewLibrary());
+                    document.getElementById('ai-chat-widget').classList.remove('hidden');
+                    break;
+                default:
+                    app.innerHTML = LayoutMain(ViewPlaceholder(APP_STATE.view));
+                    document.getElementById('ai-chat-widget').classList.remove('hidden');
             }
             applyTheme();
         }
@@ -210,7 +292,7 @@
         `;
 
         const ViewSplash = () => `
-            <div class="flex flex-col items-center justify-center h-full bg-white dark:bg-darkbg animate-fade-in">
+            <div class="flex flex-col items-center justify-center h-full glass animate-fade-in">
                 <div class="animate-float mb-4 scale-150">
                     ${Logo('text-4xl')}
                 </div>
@@ -220,7 +302,7 @@
         `;
 
         const ViewOnboarding = () => `
-            <div class="h-full flex flex-col bg-white dark:bg-darkbg relative overflow-hidden">
+            <div class="h-full flex flex-col glass relative overflow-hidden">
                 <div class="absolute top-0 right-0 w-64 h-64 bg-brand-200 dark:bg-brand-900/30 rounded-full filter blur-3xl opacity-50 -translate-y-1/2 translate-x-1/2"></div>
                 
                 <div class="flex-1 flex flex-col items-center justify-center p-8 text-center z-10">
@@ -236,15 +318,15 @@
         `;
 
         const ViewAuth = () => `
-            <div class="h-full flex items-center justify-center bg-gray-50 dark:bg-darkbg p-4">
-                <div class="bg-white dark:bg-card w-full max-w-md p-8 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700">
+            <div class="h-full flex items-center justify-center p-4">
+                <div class="glass w-full max-w-md p-8 rounded-2xl shadow-2xl border border-white/20">
                     <div class="text-center mb-8">
                         <div class="flex justify-center mb-4">${Logo()}</div>
                         <h2 class="text-xl font-bold text-gray-800 dark:text-white">Đăng nhập hệ thống</h2>
                     </div>
                     
                     <div class="space-y-4">
-                        <button onclick="login(1)" class="w-full p-4 border border-brand-200 dark:border-gray-600 rounded-xl flex items-center gap-4 hover:bg-brand-50 dark:hover:bg-gray-700 transition group">
+                        <button onclick="login(1)" class="w-full p-4 border border-brand-200 dark:border-gray-600 rounded-xl flex items-center gap-4 hover:bg-brand-50 dark:hover:bg-gray-700 transition group bg-white/50 dark:bg-card/50">
                             <div class="w-10 h-10 bg-blue-100 dark:bg-blue-900/50 rounded-full flex items-center justify-center text-blue-600 dark:text-blue-300">
                                 <i class="fas fa-user-tie"></i>
                             </div>
@@ -254,7 +336,7 @@
                             </div>
                         </button>
 
-                        <button onclick="login(2)" class="w-full p-4 border border-brand-200 dark:border-gray-600 rounded-xl flex items-center gap-4 hover:bg-brand-50 dark:hover:bg-gray-700 transition group">
+                        <button onclick="login(2)" class="w-full p-4 border border-brand-200 dark:border-gray-600 rounded-xl flex items-center gap-4 hover:bg-brand-50 dark:hover:bg-gray-700 transition group bg-white/50 dark:bg-card/50">
                             <div class="w-10 h-10 bg-purple-100 dark:bg-purple-900/50 rounded-full flex items-center justify-center text-purple-600 dark:text-purple-300">
                                 <i class="fas fa-briefcase"></i>
                             </div>
@@ -264,7 +346,7 @@
                             </div>
                         </button>
 
-                        <button onclick="login(3)" class="w-full p-4 border border-brand-200 dark:border-gray-600 rounded-xl flex items-center gap-4 hover:bg-brand-50 dark:hover:bg-gray-700 transition group">
+                        <button onclick="login(3)" class="w-full p-4 border border-brand-200 dark:border-gray-600 rounded-xl flex items-center gap-4 hover:bg-brand-50 dark:hover:bg-gray-700 transition group bg-white/50 dark:bg-card/50">
                             <div class="w-10 h-10 bg-green-100 dark:bg-green-900/50 rounded-full flex items-center justify-center text-green-600 dark:text-green-300">
                                 <i class="fas fa-user"></i>
                             </div>
@@ -281,14 +363,16 @@
         const LayoutMain = (content) => `
             <div class="flex h-full">
                 <!-- Sidebar (Desktop) -->
-                <aside class="hidden md:flex flex-col w-64 bg-white dark:bg-card border-r border-gray-200 dark:border-gray-700">
+                <aside class="hidden md:flex flex-col w-64 glass border-r border-gray-200 dark:border-gray-700 z-20">
                     <div class="p-6">${Logo()}</div>
-                    <nav class="flex-1 px-4 space-y-2 mt-4">
+                    <nav class="flex-1 px-4 space-y-2 mt-4 overflow-y-auto hide-scrollbar">
                         ${NavItems('desktop')}
                     </nav>
-                    <div class="p-4 border-t border-gray-200 dark:border-gray-700">
+                    
+                    <!-- Footer Info & Copyright -->
+                    <div class="p-4 border-t border-gray-200 dark:border-gray-700 bg-white/30 dark:bg-black/20">
                         <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-full bg-brand-500 flex items-center justify-center text-white font-bold">
+                            <div class="w-10 h-10 rounded-full bg-brand-500 flex items-center justify-center text-white font-bold shadow-md">
                                 ${APP_STATE.user.name.charAt(0)}
                             </div>
                             <div class="overflow-hidden">
@@ -296,13 +380,18 @@
                                 <div class="text-xs text-gray-500 truncate capitalize">${APP_STATE.user.role}</div>
                             </div>
                         </div>
-                        <button onclick="navigate('auth')" class="mt-4 w-full text-xs text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 py-2 rounded flex items-center justify-center gap-2"><i class="fas fa-sign-out-alt"></i> Đăng xuất</button>
+                        <button onclick="navigate('auth')" class="mt-4 w-full text-xs text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 py-2 rounded flex items-center justify-center gap-2 transition"><i class="fas fa-sign-out-alt"></i> Đăng xuất</button>
+                        
+                        <!-- Copyright -->
+                        <div class="text-[10px] text-gray-400 mt-4 text-center border-t border-gray-200 dark:border-gray-700 pt-2">
+                             © FPT Polytechnic Hoang
+                        </div>
                     </div>
                 </aside>
 
                 <!-- Mobile Header -->
                 <div class="flex-1 flex flex-col h-full overflow-hidden relative">
-                    <header class="md:hidden h-16 bg-white dark:bg-card border-b border-gray-200 dark:border-gray-700 flex items-center justify-between px-4 z-20">
+                    <header class="md:hidden h-16 glass border-b border-gray-200 dark:border-gray-700 flex items-center justify-between px-4 z-20">
                         ${Logo('text-lg')}
                         <div class="w-8 h-8 rounded-full bg-brand-500 flex items-center justify-center text-white text-xs font-bold">
                              ${APP_STATE.user.name.charAt(0)}
@@ -310,12 +399,13 @@
                     </header>
 
                     <!-- Main Content Scrollable -->
-                    <main class="flex-1 overflow-y-auto bg-gray-50 dark:bg-darkbg p-4 md:p-8 pb-24 md:pb-8">
+                    <main class="flex-1 overflow-y-auto p-4 md:p-8 pb-24 md:pb-8 relative">
+                         <!-- Background overlay for better text contrast if needed -->
                         ${content}
                     </main>
 
                     <!-- Mobile Bottom Nav -->
-                    <nav class="md:hidden fixed bottom-0 w-full bg-white dark:bg-card border-t border-gray-200 dark:border-gray-700 flex justify-around py-3 z-30 pb-safe">
+                    <nav class="md:hidden fixed bottom-0 w-full glass border-t border-gray-200 dark:border-gray-700 flex justify-around py-3 z-30 pb-safe">
                         ${NavItems('mobile')}
                     </nav>
                 </div>
@@ -325,21 +415,28 @@
         const NavItems = (mode) => {
             const items = [
                 { id: 'dashboard', icon: 'fa-chart-pie', label: 'Tổng quan' },
+                { id: 'notifications', icon: 'fa-bell', label: 'Thông báo', new: true },
                 { id: 'tasks', icon: 'fa-tasks', label: 'Công việc' },
                 { id: 'team', icon: 'fa-users', label: 'Nhân sự', role: ['admin', 'manager'] },
+                { id: 'projects', icon: 'fa-project-diagram', label: 'Dự án' },
+                { id: 'business', icon: 'fa-building', label: 'Doanh nghiệp' },
+                { id: 'library', icon: 'fa-calendar-alt', label: 'Lịch trình' }, // Đổi icon cho hợp với nội dung mới
                 { id: 'settings', icon: 'fa-cog', label: 'Cài đặt' }
             ];
 
             return items.map(item => {
                 if (item.role && !item.role.includes(APP_STATE.user.role)) return '';
                 const active = APP_STATE.view === item.id;
-                const activeClass = active ? 'text-brand-600 bg-brand-50 dark:bg-brand-900/20 dark:text-brand-400' : 'text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800';
+                const activeClass = active ? 'text-brand-600 bg-brand-50/80 dark:bg-brand-900/40 dark:text-brand-400 font-bold shadow-sm' : 'text-gray-600 hover:bg-white/50 dark:text-gray-400 dark:hover:bg-gray-800/50';
                 
                 if (mode === 'desktop') {
-                    return `<button onclick="navigate('${item.id}')" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition ${activeClass}">
-                        <i class="fas ${item.icon} w-5"></i> ${item.label}
+                    return `<button onclick="navigate('${item.id}')" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${activeClass} relative">
+                        <i class="fas ${item.icon} w-5 text-center"></i> ${item.label}
+                        ${item.new ? '<span class="absolute right-2 w-2 h-2 bg-red-500 rounded-full"></span>' : ''}
                     </button>`;
                 } else {
+                    // Mobile limited items
+                    if(['business', 'library', 'projects', 'settings'].includes(item.id)) return '';
                     return `<button onclick="navigate('${item.id}')" class="flex flex-col items-center gap-1 text-xs ${active ? 'text-brand-600 dark:text-brand-400' : 'text-gray-400'}">
                         <i class="fas ${item.icon} text-lg"></i>
                         <span>${item.label}</span>
@@ -348,14 +445,183 @@
             }).join('');
         };
 
+        const ViewPlaceholder = (title) => `
+            <div class="flex flex-col items-center justify-center h-full text-center space-y-4 glass rounded-3xl p-10 m-4">
+                <div class="w-20 h-20 bg-brand-100 rounded-full flex items-center justify-center text-brand-500 text-3xl mb-4">
+                    <i class="fas fa-tools"></i>
+                </div>
+                <h2 class="text-3xl font-bold dark:text-white capitalize">${title}</h2>
+                <p class="text-gray-500 max-w-md">Tính năng này đang được phát triển. Vui lòng quay lại sau.</p>
+                <button onclick="navigate('dashboard')" class="px-6 py-2 bg-brand-600 text-white rounded-lg shadow hover:bg-brand-700 transition">Về trang chủ</button>
+            </div>
+        `;
+
+        // --- NEW VIEWS IMPLEMENTATION ---
+
+        // 1. View Projects (Dự án con)
+        const ViewProjects = () => `
+            <div class="space-y-6 relative z-10">
+                <div class="flex justify-between items-center">
+                    <h1 class="text-2xl font-bold dark:text-white">Danh sách Dự án</h1>
+                    <button class="bg-brand-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-brand-700 shadow-md">
+                        <i class="fas fa-plus"></i> Tạo dự án mới
+                    </button>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    ${APP_STATE.projects.map(p => `
+                        <div class="glass p-6 rounded-xl hover:shadow-lg transition cursor-pointer">
+                            <div class="flex justify-between items-start mb-4">
+                                <h3 class="font-bold text-lg dark:text-white">${p.name}</h3>
+                                <span class="px-2 py-1 rounded text-xs font-medium ${p.status === 'Đang chạy' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}">${p.status}</span>
+                            </div>
+                            <p class="text-sm text-gray-500 mb-4 dark:text-gray-400">${p.desc}</p>
+                            
+                            <div class="mb-4">
+                                <div class="flex justify-between text-xs mb-1 dark:text-gray-300">
+                                    <span>Tiến độ</span>
+                                    <span>${p.progress}%</span>
+                                </div>
+                                <div class="w-full bg-gray-200 rounded-full h-2 dark:bg-gray-700">
+                                    <div class="bg-brand-500 h-2 rounded-full" style="width: ${p.progress}%"></div>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-center justify-between">
+                                <div class="flex -space-x-2">
+                                    ${p.members.map(mid => {
+                                        const mem = APP_STATE.users.find(u => u.id === mid);
+                                        return `<div class="w-8 h-8 rounded-full bg-brand-100 border-2 border-white dark:border-card flex items-center justify-center text-xs font-bold text-brand-700" title="${mem.name}">${mem.name.charAt(0)}</div>`;
+                                    }).join('')}
+                                </div>
+                                <button class="text-brand-600 text-sm hover:underline dark:text-brand-400">Chi tiết <i class="fas fa-arrow-right"></i></button>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+
+        // 2. View Notifications (Thông báo)
+        const ViewNotifications = () => `
+            <div class="space-y-6 relative z-10 max-w-4xl mx-auto">
+                <h1 class="text-2xl font-bold dark:text-white">Thông báo từ Ban Giám Đốc</h1>
+                
+                <div class="space-y-4">
+                    ${APP_STATE.notifications.map(n => `
+                        <div class="glass p-5 rounded-xl border-l-4 ${n.urgent ? 'border-l-red-500' : 'border-l-brand-500'} hover:translate-x-1 transition duration-200">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <h3 class="font-bold text-lg dark:text-white flex items-center gap-2">
+                                        ${n.urgent ? '<i class="fas fa-exclamation-circle text-red-500 animate-pulse"></i>' : '<i class="fas fa-bullhorn text-brand-500"></i>'}
+                                        ${n.title}
+                                    </h3>
+                                    <p class="text-xs text-gray-500 mt-1 dark:text-gray-400"><i class="far fa-clock"></i> ${n.time} • Từ: <strong>${n.sender}</strong></p>
+                                </div>
+                                <button class="text-gray-400 hover:text-red-500"><i class="fas fa-trash"></i></button>
+                            </div>
+                            <div class="mt-3 text-sm text-gray-700 dark:text-gray-300 bg-white/50 dark:bg-black/20 p-3 rounded-lg">
+                                ${n.content}
+                            </div>
+                            <div class="mt-3 flex gap-2">
+                                <button class="px-3 py-1 bg-brand-600 text-white text-xs rounded hover:bg-brand-700">Xác nhận tham gia</button>
+                                <button class="px-3 py-1 text-gray-500 text-xs hover:bg-gray-100 rounded dark:hover:bg-gray-700">Báo vắng</button>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+
+        // 3. View Business (Doanh nghiệp & Cổ đông)
+        const ViewBusiness = () => `
+            <div class="space-y-6 relative z-10">
+                <h1 class="text-2xl font-bold dark:text-white">Đối tác & Cổ đông Chiến lược</h1>
+                <p class="text-gray-500 dark:text-gray-400">Danh sách các doanh nghiệp hợp tác phát triển BizTask AI.</p>
+                
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                    ${APP_STATE.partners.map(p => `
+                        <div class="glass p-6 rounded-xl flex flex-col items-center text-center hover:scale-105 transition duration-300">
+                            <div class="w-16 h-16 rounded-full flex items-center justify-center text-3xl mb-4 ${p.color} shadow-lg">
+                                <i class="fas ${p.logo}"></i>
+                            </div>
+                            <h3 class="font-bold text-lg dark:text-white mb-1">${p.name}</h3>
+                            <p class="text-xs font-semibold text-brand-600 dark:text-brand-400 uppercase tracking-wide mb-3">${p.type}</p>
+                            <button class="mt-auto px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-full text-xs hover:bg-brand-50 dark:hover:bg-gray-700 dark:text-white transition">Xem hồ sơ</button>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+
+        // 4. View Library/Schedule (Lịch trình công sở)
+        const ViewLibrary = () => `
+            <div class="space-y-6 relative z-10">
+                <div class="flex justify-between items-center">
+                    <h1 class="text-2xl font-bold dark:text-white">Lịch trình làm việc & Truy cập</h1>
+                    <div class="flex gap-2">
+                        <span class="text-sm text-gray-500 dark:text-gray-400">Tháng 12/2025</span>
+                        <button class="text-brand-600 hover:underline">Thay đổi</button>
+                    </div>
+                </div>
+                
+                <div class="glass p-6 rounded-xl">
+                    <div class="grid grid-cols-1 md:grid-cols-7 gap-4 text-center">
+                        ${['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'].map(d => `<div class="font-bold text-gray-400 text-sm mb-2">${d}</div>`).join('')}
+                        
+                        <!-- Empty cells for padding -->
+                        <div class="h-24 p-2 border border-gray-100 dark:border-gray-700 rounded bg-gray-50/50 dark:bg-gray-800/30"></div>
+                        
+                        <!-- Calendar Days -->
+                        ${Array.from({length: 7}, (_, i) => {
+                            const date = i + 1;
+                            const dayStr = `0${date + 3}/12`; // Offset to match mock data
+                            const event = APP_STATE.schedule.find(s => s.day === dayStr);
+                            
+                            return `
+                            <div class="h-24 p-2 border border-gray-100 dark:border-gray-700 rounded bg-white/50 dark:bg-card/50 hover:bg-brand-50 dark:hover:bg-gray-700 transition relative group">
+                                <span class="absolute top-2 right-2 text-xs font-bold dark:text-gray-300">${date + 3}</span>
+                                ${event ? `
+                                    <div class="mt-6 text-[10px] text-left p-1 rounded ${event.status === 'check-in' ? 'bg-green-100 text-green-700' : event.status === 'away' ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-200 text-gray-600'}">
+                                        <i class="fas fa-circle text-[6px] mr-1"></i>${event.event}
+                                    </div>
+                                ` : ''}
+                            </div>`;
+                        }).join('')}
+                    </div>
+                    
+                    <div class="mt-6 border-t border-gray-200 dark:border-gray-700 pt-4">
+                        <h3 class="font-bold mb-3 dark:text-white">Chi tiết lịch trình cá nhân</h3>
+                        <div class="space-y-3">
+                             ${APP_STATE.schedule.map(s => `
+                                <div class="flex items-center gap-4 p-3 hover:bg-white/50 dark:hover:bg-gray-800 rounded-lg transition">
+                                    <div class="w-12 text-center">
+                                        <div class="font-bold text-brand-600 dark:text-brand-400">${s.day}</div>
+                                    </div>
+                                    <div class="w-10 h-10 rounded-full flex items-center justify-center ${s.status === 'check-in' ? 'bg-green-100 text-green-600' : s.status === 'away' ? 'bg-yellow-100 text-yellow-600' : 'bg-gray-100 text-gray-400'}">
+                                        <i class="fas ${s.status === 'check-in' ? 'fa-building' : s.status === 'away' ? 'fa-plane' : 'fa-home'}"></i>
+                                    </div>
+                                    <div class="flex-1">
+                                        <div class="font-medium dark:text-white">${s.event}</div>
+                                        <div class="text-xs text-gray-500">9:00 AM - 6:00 PM</div>
+                                    </div>
+                                    <span class="text-xs px-2 py-1 rounded bg-gray-100 dark:bg-gray-700 dark:text-gray-300 capitalize">${s.status}</span>
+                                </div>
+                             `).join('')}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
         const ViewDashboard = () => `
-            <div class="space-y-6">
+            <div class="space-y-6 relative z-10">
                 <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                     <div>
                         <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Tổng quan</h1>
                         <p class="text-sm text-gray-500">Số liệu cập nhật thời gian thực hôm nay</p>
                     </div>
-                    <button onclick="toggleTheme()" class="p-2 rounded-full bg-white dark:bg-card shadow text-gray-600 dark:text-yellow-400">
+                    <button onclick="toggleTheme()" class="p-2 rounded-full glass shadow text-gray-600 dark:text-yellow-400 hover:scale-110 transition">
                         <i class="fas ${APP_STATE.darkMode ? 'fa-sun' : 'fa-moon'}"></i>
                     </button>
                 </div>
@@ -363,7 +629,7 @@
                 <!-- Expanded Stats Grid -->
                 <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
                     <!-- Thời gian làm -->
-                    <div class="bg-white dark:bg-card p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col justify-between h-32">
+                    <div class="glass p-4 rounded-xl shadow-sm flex flex-col justify-between h-32 hover:shadow-md transition">
                         <div class="flex justify-between items-start">
                              <div class="text-gray-500 text-xs uppercase tracking-wide">Thời gian làm</div>
                              <i class="fas fa-clock text-blue-500 bg-blue-100 dark:bg-blue-900/30 p-2 rounded-lg"></i>
@@ -375,7 +641,7 @@
                     </div>
 
                     <!-- Công việc được giao -->
-                    <div class="bg-white dark:bg-card p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col justify-between h-32">
+                    <div class="glass p-4 rounded-xl shadow-sm flex flex-col justify-between h-32 hover:shadow-md transition">
                          <div class="flex justify-between items-start">
                              <div class="text-gray-500 text-xs uppercase tracking-wide">Việc được giao</div>
                              <i class="fas fa-file-alt text-purple-500 bg-purple-100 dark:bg-purple-900/30 p-2 rounded-lg"></i>
@@ -387,7 +653,7 @@
                     </div>
                     
                     <!-- Việc cần làm -->
-                     <div class="bg-white dark:bg-card p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col justify-between h-32">
+                     <div class="glass p-4 rounded-xl shadow-sm flex flex-col justify-between h-32 hover:shadow-md transition">
                          <div class="flex justify-between items-start">
                              <div class="text-gray-500 text-xs uppercase tracking-wide">Cần xử lý</div>
                              <i class="fas fa-exclamation-circle text-red-500 bg-red-100 dark:bg-red-900/30 p-2 rounded-lg"></i>
@@ -399,7 +665,7 @@
                     </div>
 
                      <!-- KPI -->
-                     <div class="bg-white dark:bg-card p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col justify-between h-32">
+                     <div class="glass p-4 rounded-xl shadow-sm flex flex-col justify-between h-32 hover:shadow-md transition">
                          <div class="flex justify-between items-start">
                              <div class="text-gray-500 text-xs uppercase tracking-wide">KPI Tháng</div>
                              <i class="fas fa-chart-line text-green-500 bg-green-100 dark:bg-green-900/30 p-2 rounded-lg"></i>
@@ -411,13 +677,13 @@
                     </div>
                     
                     <!-- Tiến độ -->
-                    <div class="bg-white dark:bg-card p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col justify-between h-32">
+                    <div class="glass p-4 rounded-xl shadow-sm flex flex-col justify-between h-32 hover:shadow-md transition">
                         <div class="flex justify-between items-start">
                              <div class="text-gray-500 text-xs uppercase tracking-wide">Tiến độ hoàn thành</div>
                              <i class="fas fa-check-double text-teal-500 bg-teal-100 dark:bg-teal-900/30 p-2 rounded-lg"></i>
                         </div>
                         <div>
-                             <div class="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700 mt-2">
+                             <div class="w-full bg-gray-200/50 rounded-full h-2.5 dark:bg-gray-700 mt-2">
                                 <div class="bg-teal-500 h-2.5 rounded-full" style="width: 75%"></div>
                              </div>
                              <div class="text-xs text-gray-500 mt-2 text-right">75% tổng dự án</div>
@@ -425,7 +691,7 @@
                     </div>
 
                      <!-- Active Users -->
-                     <div class="bg-white dark:bg-card p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col justify-between h-32 col-span-1 md:col-span-2 lg:col-span-3">
+                     <div class="glass p-4 rounded-xl shadow-sm flex flex-col justify-between h-32 col-span-1 md:col-span-2 lg:col-span-3 hover:shadow-md transition">
                          <div class="flex justify-between items-start mb-2">
                              <div class="text-gray-500 text-xs uppercase tracking-wide">Thành viên trực tuyến</div>
                              <span class="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded dark:bg-green-900 dark:text-green-300">3 Online</span>
@@ -433,7 +699,7 @@
                         <div class="flex -space-x-3 overflow-hidden p-1">
                              ${APP_STATE.users.filter(u => u.status === 'online').map(u => `
                                 <div class="relative group cursor-pointer" title="${u.name}">
-                                    <div class="w-10 h-10 rounded-full bg-brand-500 border-2 border-white dark:border-card flex items-center justify-center text-white font-bold text-sm">${u.name.charAt(0)}</div>
+                                    <div class="w-10 h-10 rounded-full bg-brand-500 border-2 border-white dark:border-card flex items-center justify-center text-white font-bold text-sm shadow-sm">${u.name.charAt(0)}</div>
                                     <span class="bottom-0 right-0 absolute w-3 h-3 bg-green-400 border-2 border-white dark:border-gray-800 rounded-full"></span>
                                 </div>
                              `).join('')}
@@ -444,11 +710,11 @@
 
                 <!-- Charts Area -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div class="bg-white dark:bg-card p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+                    <div class="glass p-6 rounded-xl shadow-sm">
                         <h3 class="font-bold mb-4 dark:text-white">Biểu đồ năng suất (Tuần)</h3>
                         <canvas id="chartProductivity" height="200"></canvas>
                     </div>
-                    <div class="bg-white dark:bg-card p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+                    <div class="glass p-6 rounded-xl shadow-sm">
                         <h3 class="font-bold mb-4 dark:text-white">Phân bổ dự án</h3>
                         <canvas id="chartProjects" height="200"></canvas>
                     </div>
@@ -457,11 +723,11 @@
         `;
 
         const ViewTasks = () => `
-            <div class="h-full flex flex-col">
+            <div class="h-full flex flex-col relative z-10">
                 <div class="flex justify-between items-center mb-6">
                     <h1 class="text-2xl font-bold dark:text-white">Quản lý công việc</h1>
                     ${APP_STATE.user.role !== 'employee' ? `
-                    <button onclick="openModal('modal-add-task')" class="bg-brand-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-brand-700 shadow-lg shadow-brand-500/30 flex items-center gap-2">
+                    <button onclick="openModal('modal-add-task')" class="bg-brand-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-brand-700 shadow-lg shadow-brand-500/30 flex items-center gap-2 hover:-translate-y-0.5 transition">
                         <i class="fas fa-plus"></i> Giao việc mới
                     </button>` : ''}
                 </div>
@@ -469,7 +735,7 @@
                 <!-- Kanban/List Mock -->
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6 overflow-x-auto pb-4">
                     <!-- Column Todo -->
-                    <div class="bg-gray-100 dark:bg-gray-800/50 p-4 rounded-xl min-w-[280px]">
+                    <div class="glass p-4 rounded-xl min-w-[280px]">
                         <div class="flex justify-between items-center mb-4">
                             <span class="font-bold text-gray-700 dark:text-gray-300">Cần làm</span>
                             <span class="bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-xs px-2 py-1 rounded-full">3</span>
@@ -481,7 +747,7 @@
                     </div>
                     
                     <!-- Column Doing -->
-                    <div class="bg-gray-100 dark:bg-gray-800/50 p-4 rounded-xl min-w-[280px]">
+                    <div class="glass p-4 rounded-xl min-w-[280px]">
                         <div class="flex justify-between items-center mb-4">
                             <span class="font-bold text-blue-600 dark:text-blue-400">Đang làm</span>
                             <span class="bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300 text-xs px-2 py-1 rounded-full">2</span>
@@ -492,7 +758,7 @@
                     </div>
 
                     <!-- Column Done -->
-                    <div class="bg-gray-100 dark:bg-gray-800/50 p-4 rounded-xl min-w-[280px]">
+                    <div class="glass p-4 rounded-xl min-w-[280px]">
                         <div class="flex justify-between items-center mb-4">
                             <span class="font-bold text-green-600 dark:text-green-400">Hoàn thành</span>
                             <span class="bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-300 text-xs px-2 py-1 rounded-full">5</span>
@@ -509,7 +775,7 @@
             const colors = { high: 'red', medium: 'yellow', low: 'gray' };
             const c = colors[prio];
             return `
-            <div onclick="alert('Xem chi tiết công việc #${id}')" class="bg-white dark:bg-card p-4 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-md transition cursor-pointer transform hover:-translate-y-1">
+            <div onclick="alert('Xem chi tiết công việc #${id}')" class="bg-white/80 dark:bg-card/80 p-4 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-md transition cursor-pointer transform hover:-translate-y-1">
                 <div class="flex justify-between items-start mb-2">
                     <span class="bg-${c}-100 text-${c}-700 text-[10px] px-2 py-0.5 rounded uppercase font-bold tracking-wider">${prio}</span>
                     <button class="text-gray-400 hover:text-brand-500"><i class="fas fa-ellipsis-h"></i></button>
@@ -525,17 +791,17 @@
         };
         
         const ViewTeam = () => `
-             <div class="space-y-6">
+             <div class="space-y-6 relative z-10">
                  <div class="flex justify-between items-center">
                     <h1 class="text-2xl font-bold dark:text-white">Nhân sự & Phòng ban</h1>
-                    <button onclick="openModal('modal-add-employee')" class="bg-brand-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-brand-700 shadow-lg shadow-brand-500/30 flex items-center gap-2">
+                    <button onclick="openModal('modal-add-employee')" class="bg-brand-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-brand-700 shadow-lg shadow-brand-500/30 flex items-center gap-2 hover:-translate-y-0.5 transition">
                         <i class="fas fa-user-plus"></i> Thêm nhân viên
                     </button>
                 </div>
                 
-                <div class="bg-white dark:bg-card rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+                <div class="glass rounded-xl shadow-sm overflow-hidden relative z-10">
                     <table class="w-full text-left text-sm">
-                        <thead class="bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400">
+                        <thead class="bg-gray-50/50 dark:bg-gray-800/50 text-gray-500 dark:text-gray-400">
                             <tr>
                                 <th class="p-4">Nhân viên</th>
                                 <th class="p-4">Vai trò</th>
@@ -546,9 +812,9 @@
                         </thead>
                         <tbody class="divide-y divide-gray-100 dark:divide-gray-700 dark:text-gray-300">
                             ${APP_STATE.users.map(u => `
-                            <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition cursor-pointer" onclick="viewEmployeeDetail(${u.id})">
+                            <tr class="hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition cursor-pointer" onclick="viewEmployeeDetail(${u.id})">
                                 <td class="p-4 flex items-center gap-3">
-                                    <div class="w-8 h-8 rounded-full bg-brand-100 flex items-center justify-center text-brand-600 font-bold">${u.name.charAt(0)}</div>
+                                    <div class="w-8 h-8 rounded-full bg-brand-100 flex items-center justify-center text-brand-600 font-bold shadow-sm">${u.name.charAt(0)}</div>
                                     <div>
                                         <div class="font-bold">${u.name}</div>
                                         <div class="text-xs text-gray-500">${u.email}</div>
@@ -558,7 +824,7 @@
                                 <td class="p-4">${u.department || 'N/A'}</td>
                                 <td class="p-4">
                                     <span class="flex items-center gap-1 text-xs">
-                                        <span class="w-2 h-2 rounded-full ${u.status === 'online' ? 'bg-green-500' : 'bg-yellow-500'}"></span> 
+                                        <span class="w-2 h-2 rounded-full ${u.status === 'online' ? 'bg-green-500' : 'bg-yellow-500'} animate-pulse"></span> 
                                         ${u.status === 'online' ? 'Online' : 'Vắng mặt'}
                                     </span>
                                 </td>
@@ -574,14 +840,14 @@
         `;
         
         const ViewSettings = () => `
-            <div class="max-w-4xl mx-auto space-y-6">
+            <div class="max-w-4xl mx-auto space-y-6 relative z-10">
                 <h1 class="text-2xl font-bold dark:text-white mb-6">Cài đặt hệ thống</h1>
                 
                 <!-- Account -->
-                <div class="bg-white dark:bg-card p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+                <div class="glass p-6 rounded-xl shadow-sm">
                     <h3 class="text-lg font-bold mb-4 flex items-center gap-2 dark:text-white"><i class="fas fa-user-circle text-brand-500"></i> Tài khoản của bạn</h3>
                     <div class="flex items-center gap-4 mb-6">
-                         <div class="w-16 h-16 rounded-full bg-brand-600 flex items-center justify-center text-white text-2xl font-bold">
+                         <div class="w-16 h-16 rounded-full bg-brand-600 flex items-center justify-center text-white text-2xl font-bold shadow-lg">
                              ${APP_STATE.user.name.charAt(0)}
                         </div>
                         <div>
@@ -591,59 +857,35 @@
                         </div>
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <input type="text" value="${APP_STATE.user.name}" class="p-3 bg-gray-50 dark:bg-gray-800 border dark:border-gray-600 rounded-lg w-full dark:text-white">
-                        <input type="text" value="CEO" class="p-3 bg-gray-50 dark:bg-gray-800 border dark:border-gray-600 rounded-lg w-full dark:text-white">
+                        <input type="text" value="${APP_STATE.user.name}" class="p-3 bg-gray-50/50 dark:bg-gray-800/50 border dark:border-gray-600 rounded-lg w-full dark:text-white backdrop-blur-sm">
+                        <input type="text" value="CEO" class="p-3 bg-gray-50/50 dark:bg-gray-800/50 border dark:border-gray-600 rounded-lg w-full dark:text-white backdrop-blur-sm">
                     </div>
                 </div>
 
                 <!-- App Settings -->
-                <div class="bg-white dark:bg-card p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+                <div class="glass p-6 rounded-xl shadow-sm">
                     <h3 class="text-lg font-bold mb-4 flex items-center gap-2 dark:text-white"><i class="fas fa-sliders-h text-brand-500"></i> Tùy chỉnh ứng dụng</h3>
                     <div class="space-y-4">
-                        <div class="flex justify-between items-center p-3 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition">
+                        <div class="flex justify-between items-center p-3 hover:bg-gray-50/50 dark:hover:bg-gray-800/50 rounded-lg transition">
                             <div>
                                 <div class="font-medium dark:text-white">Giao diện tối (Dark Mode)</div>
                                 <div class="text-xs text-gray-500">Giảm mỏi mắt khi làm việc đêm</div>
                             </div>
                             <button onclick="toggleTheme()" class="w-12 h-6 rounded-full ${APP_STATE.darkMode ? 'bg-brand-600' : 'bg-gray-300'} relative transition">
-                                <span class="w-4 h-4 bg-white rounded-full absolute top-1 transition-all ${APP_STATE.darkMode ? 'right-1' : 'left-1'}"></span>
+                                <span class="w-4 h-4 bg-white rounded-full absolute top-1 transition-all ${APP_STATE.darkMode ? 'right-1' : 'left-1'} shadow-sm"></span>
                             </button>
                         </div>
                         
-                        <div class="flex justify-between items-center p-3 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition">
+                        <div class="flex justify-between items-center p-3 hover:bg-gray-50/50 dark:hover:bg-gray-800/50 rounded-lg transition">
                             <div>
                                 <div class="font-medium dark:text-white">Thông báo đẩy</div>
                                 <div class="text-xs text-gray-500">Nhận thông báo khi có việc mới</div>
                             </div>
                             <button class="w-12 h-6 rounded-full bg-brand-600 relative transition">
-                                <span class="w-4 h-4 bg-white rounded-full absolute top-1 right-1 transition-all"></span>
+                                <span class="w-4 h-4 bg-white rounded-full absolute top-1 right-1 transition-all shadow-sm"></span>
                             </button>
                         </div>
-
-                         <div class="flex justify-between items-center p-3 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition">
-                            <div>
-                                <div class="font-medium dark:text-white">Ngôn ngữ</div>
-                                <div class="text-xs text-gray-500">Tiếng Việt (Mặc định)</div>
-                            </div>
-                             <select class="bg-transparent border dark:border-gray-600 rounded p-1 text-sm dark:text-white">
-                                <option>Tiếng Việt</option>
-                                <option>English</option>
-                             </select>
-                        </div>
                     </div>
-                </div>
-
-                 <!-- Security -->
-                <div class="bg-white dark:bg-card p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
-                    <h3 class="text-lg font-bold mb-4 flex items-center gap-2 text-red-500"><i class="fas fa-shield-alt"></i> Bảo mật</h3>
-                    <button class="w-full text-left p-3 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg text-red-600 transition flex justify-between">
-                        <span>Đổi mật khẩu</span>
-                        <i class="fas fa-chevron-right"></i>
-                    </button>
-                     <button class="w-full text-left p-3 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg text-red-600 transition flex justify-between">
-                        <span>Xác thực 2 lớp (2FA)</span>
-                        <i class="fas fa-chevron-right"></i>
-                    </button>
                 </div>
             </div>
         `;
@@ -717,19 +959,6 @@
                                 <input type="text" placeholder="Họ và tên" class="p-3 border dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-800 dark:text-white w-full">
                                 <input type="email" placeholder="Email công ty" class="p-3 border dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-800 dark:text-white w-full">
                             </div>
-                            <div class="grid grid-cols-2 gap-4">
-                                <select class="p-3 border dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-800 dark:text-white w-full">
-                                    <option>Chọn phòng ban...</option>
-                                    <option>Marketing</option>
-                                    <option>IT</option>
-                                    <option>Sales</option>
-                                </select>
-                                <select class="p-3 border dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-800 dark:text-white w-full">
-                                    <option>Chọn vai trò...</option>
-                                    <option>Nhân viên</option>
-                                    <option>Trưởng phòng</option>
-                                </select>
-                            </div>
                              <input type="text" placeholder="Chức danh (VD: Designer)" class="p-3 border dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-800 dark:text-white w-full">
                         </div>
                         <div class="p-6 bg-gray-50 dark:bg-gray-800/50 flex justify-end gap-3">
@@ -788,14 +1017,6 @@
                                             <div class="h-full bg-blue-500" style="width: ${u.kpi || 70}%"></div>
                                         </div>
                                         <span class="text-sm font-bold">${u.kpi || 70}%</span>
-                                    </div>
-                                </div>
-                                <div class="bg-gray-50 dark:bg-gray-800 p-3 rounded-lg">
-                                    <p class="text-xs text-gray-500 mb-2">Hồ sơ ứng tuyển</p>
-                                    <div class="flex items-center gap-2 text-sm">
-                                        <i class="fas fa-file-pdf text-red-500"></i>
-                                        <span class="flex-1 truncate">CV_${u.name.replace(/\s/g, '_')}_2024.pdf</span>
-                                        <button class="text-brand-600 text-xs font-bold">Tải xuống</button>
                                     </div>
                                 </div>
                              </div>
